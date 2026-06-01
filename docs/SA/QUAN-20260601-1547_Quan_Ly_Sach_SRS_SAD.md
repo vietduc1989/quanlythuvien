@@ -11,12 +11,13 @@
 
 ## Tài liệu liên quan
 
-| Mã tính năng | Loại tài liệu | PR | Trạng thái |
-|-------------|---------------|-----|------------|
-| `BRD-01` | BRD | #1 | ✅ Đã duyệt |
-| `BRD-01` | **SRS/SAD** (tài liệu này) | — | ✅ Hiện tại |
+| Mã tính năng | Loại tài liệu | PR / Commit | Trạng thái |
+|-------------|---------------|-------------|------------|
+| `BRD-01` | BRD | Commit `c3f5f57` | ✅ Đã duyệt |
+| `BRD-01` | **SRS/SAD** (tài liệu này) | PR #3 | ✅ Hiện tại |
 | `BRD-01` | DEV (mã nguồn) | — | ⏳ Chờ SRS duyệt |
 | `BRD-01` | TEST (test cases) | — | ⏳ Chờ DEV duyệt |
+
 
 ---
 
