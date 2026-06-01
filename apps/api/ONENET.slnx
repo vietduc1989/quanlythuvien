@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/ONENET.Domain/ONENET.Domain.csproj" />
+  <Project Path="src/ONENET.Application/ONENET.Application.csproj" />
+  <Project Path="src/ONENET.Infrastructure/ONENET.Infrastructure.csproj" />
+  <Project Path="src/ONENET.WebAPI/ONENET.WebAPI.csproj" />
+</Solution>

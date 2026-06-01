@@ -1,0 +1,28 @@
+## ─── .NET ────────────────────────────────────────────────────────────────────
+*.user
+*.suo
+.vs/
+[Bb]in/
+[Oo]bj/
+logs/
+*.log
+
+## ─── Node/React/Vite ─────────────────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+## ─── SECURITY: Không bao giờ commit API Keys hay Secrets ────────────────────
+appsettings.Local.json
+appsettings.Secrets.json
+secrets.json
+.env
+.env.*
+!.env.example
+
+## ─── IDE ─────────────────────────────────────────────────────────────────────
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
