@@ -1,0 +1,15 @@
+using System;
+
+namespace ONENET.Application.Common.Exceptions;
+
+public class NotFoundException : Exception
+{
+    public NotFoundException(string message) : base(message)
+    {
+    }
+
+    public NotFoundException(string name, object key)
+        : base($"Thực thể \"{name}\" ({key}) không tồn tại trong hệ thống.")
+    {
+    }
+}
