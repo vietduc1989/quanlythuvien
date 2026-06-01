@@ -1,7 +1,13 @@
+// QUAN-20260601-105011
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ONENET.Application.Common.Interfaces;
+using ONENET.Domain.Interfaces;
 using ONENET.Infrastructure.Persistence;
+using ONENET.Infrastructure.Persistence.Repositories;
+using ONENET.Infrastructure.Services;
+using Serilog;
 
 namespace ONENET.Infrastructure;
 
@@ -9,9 +15,21 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
         services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
+                b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
+                .UseSnakeCaseNamingConvention() // Sử dụng snake_case cho tên bảng và cột
+                .LogTo(Log.Logger.Debug, LogLevel.Information)); // Logging EF Core queries
+
+        services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
+
+        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>()); // AppDbContext cũng là IUnitOfWork
+
+        services.AddTransient<IDateTime, DateTimeService>();
+        services.AddTransient<ICurrentUser, CurrentUserService>(); // TODO: Implement in detail based on Auth design
+        services.AddTransient<IReaderCodeGenerator, ReaderCodeGenerator>();
+
+        services.AddScoped<IReaderRepository, ReaderRepository>();
 
         return services;
     }
