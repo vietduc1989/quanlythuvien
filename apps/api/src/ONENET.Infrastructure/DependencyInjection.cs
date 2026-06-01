@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ONENET.Application.Common.Interfaces;
 using ONENET.Infrastructure.Persistence;
 
 namespace ONENET.Infrastructure;
@@ -12,6 +13,9 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        // Register IAppDbContext
+        services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
         return services;
     }
