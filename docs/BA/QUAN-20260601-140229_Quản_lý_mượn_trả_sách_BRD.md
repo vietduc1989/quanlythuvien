@@ -82,7 +82,7 @@ flowchart TD
         B -- Có --> C{Thẻ độc giả còn hiệu lực không?}
         C -- Không --> ErrorCard[Thông báo lỗi: Thẻ độc giả hết hiệu lực]
         C -- Có --> D{Tổng số sách mượn <= 5 cuốn?}
-        D -- Không --> ErrorLimit[Thông báo lỗi: Đã mượn quá số lượng cho phép (tối đa 5 cuốn)]
+        D -- Không --> ErrorLimit["Thông báo lỗi: Đã mượn quá số lượng cho phép (tối đa 5 cuốn)"]
         D -- Có --> E[Tạo phiếu mượn mới]
         E --> F[Đặt Ngày hẹn trả = Ngày mượn + 14 ngày]
         F --> G[Cập nhật tồn kho sách: Giảm 1 cho mỗi cuốn]
@@ -99,8 +99,8 @@ flowchart TD
         I --> J[Cập nhật tồn kho sách: Tăng 1 cho mỗi cuốn]
         J --> K[Đánh dấu phiếu mượn là "Đã trả"]
         K --> L{Kiểm tra: Ngày trả thực tế > Ngày hẹn trả?}
-        L -- Có --> M[Hiển thị trạng thái "Overdue"]
-        L -- Không --> N[Không hiển thị "Overdue"]
+        L -- Có --> M["Hiển thị trạng thái 'Overdue'"]
+        L -- Không --> N["Không hiển thị 'Overdue'"]
         M --> SuccessReturn([Trả sách thành công])
         N --> SuccessReturn
     end
