@@ -18,12 +18,12 @@ namespace ONENET.WebAPI.Common
             Errors = errors;
         }
 
-        public static ApiResponse Success(object? data = null, string? message = null)
+        public static ApiResponse SuccessResult(object? data = null, string? message = null)
         {
             return new ApiResponse(true, data, message);
         }
 
-        public static ApiResponse Error(string message, List<ApiError>? errors = null)
+        public static ApiResponse FailureResult(string message, List<ApiError>? errors = null)
         {
             return new ApiResponse(false, null, message, errors);
         }

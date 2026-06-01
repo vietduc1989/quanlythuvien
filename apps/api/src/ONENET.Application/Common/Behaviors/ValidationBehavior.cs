@@ -30,7 +30,7 @@ namespace ONENET.Application.Common.Behaviors
                     .ToList();
 
                 if (failures.Any())
-                    throw new ValidationException(failures);
+                    throw new Common.Exceptions.ValidationException(failures);
             }
             return await next();
         }

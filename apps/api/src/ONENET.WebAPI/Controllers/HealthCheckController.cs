@@ -20,7 +20,7 @@ namespace ONENET.WebAPI.Controllers
         public IActionResult Get()
         {
             _logger.LogInformation("Health check endpoint accessed.");
-            return Ok(ApiResponse.Success("API is healthy."));
+            return Ok(ApiResponse.SuccessResult("API is healthy."));
         }
 
         [HttpGet("error")]
