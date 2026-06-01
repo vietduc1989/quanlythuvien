@@ -1,17 +1,24 @@
-using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
+// QUAN-20260601-1634
 using FluentValidation;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using ONENET.Application.Common.Behaviors;
+using System.Reflection;
 
-namespace ONENET.Application;
-
-public static class DependencyInjection
+namespace ONENET.Application
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static class DependencyInjection
     {
-        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-        services.AddMediatR(cfg => {
-            cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-        });
-        return services;
+        public static IServiceCollection AddApplication(this IServiceCollection services)
+        {
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+            services.AddAutoMapper(Assembly.GetExecutingAssembly());
+            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+
+            return services;
+        }
     }
 }
