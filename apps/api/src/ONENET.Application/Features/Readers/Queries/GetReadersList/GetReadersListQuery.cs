@@ -10,7 +10,7 @@ namespace ONENET.Application.Features.Readers.Queries.GetReadersList;
 /// <summary>
 /// Query để lấy danh sách độc giả với phân trang, tìm kiếm và lọc.
 /// </summary>
-public record GetReadersListQuery : IRequest<Result<PaginatedList<ReaderListItemDto>>>
+public record GetReadersListQuery : IRequest<ONENET.Domain.Common.Result<PaginatedList<ReaderListItemDto>>>
 {
     public string? SearchTerm { get; init; }
     public ReaderStatus? Status { get; init; }

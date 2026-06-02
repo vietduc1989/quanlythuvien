@@ -1,3 +1,4 @@
+<!-- QUAN-20260601-1634 -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
@@ -7,4 +8,7 @@
     <RootNamespace>ONENET.Domain</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.0" />
+  </ItemGroup>
 </Project>

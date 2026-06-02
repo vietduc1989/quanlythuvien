@@ -11,7 +11,7 @@ namespace ONENET.Application.Features.Readers.Queries.GetReadersList;
 /// <summary>
 /// Handler xử lý việc lấy danh sách độc giả.
 /// </summary>
-public class GetReadersListQueryHandler : IRequestHandler<GetReadersListQuery, Result<PaginatedList<ReaderListItemDto>>>
+public class GetReadersListQueryHandler : IRequestHandler<GetReadersListQuery, ONENET.Domain.Common.Result<PaginatedList<ReaderListItemDto>>>
 {
     private readonly IReaderRepository _readerRepository;
     private readonly ILogger<GetReadersListQueryHandler> _logger;
@@ -22,7 +22,7 @@ public class GetReadersListQueryHandler : IRequestHandler<GetReadersListQuery, R
         _logger = logger;
     }
 
-    public async Task<Result<PaginatedList<ReaderListItemDto>>> Handle(GetReadersListQuery request, CancellationToken cancellationToken)
+    public async Task<ONENET.Domain.Common.Result<PaginatedList<ReaderListItemDto>>> Handle(GetReadersListQuery request, CancellationToken cancellationToken)
     {
         var readers = await _readerRepository.GetPagedListAsync(
             request.SearchTerm,
@@ -56,6 +56,6 @@ public class GetReadersListQueryHandler : IRequestHandler<GetReadersListQuery, R
         _logger.LogInformation("Retrieved {Count} readers for page {PageIndex} with search term '{SearchTerm}' and status '{Status}'.",
             readerListItems.Count, request.PageIndex, request.SearchTerm, request.Status);
 
-        return Result<PaginatedList<ReaderListItemDto>>.Success(paginatedList);
+        return ONENET.Domain.Common.Result<PaginatedList<ReaderListItemDto>>.Success(paginatedList);
     }
 }

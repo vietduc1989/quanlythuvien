@@ -45,4 +45,4 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
 
         return response;
     }
-}
+}

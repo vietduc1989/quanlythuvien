@@ -4,7 +4,7 @@
 - **Mã tính năng**: `QUAN-20260601-1634` (BRD-04)
 - **Mục tiêu**: Cung cấp dashboard theo dõi tình hình hoạt động thư viện.
 - **User Story**: Là quản lý thư viện, tôi muốn xem báo cáo tổng quan để theo dõi hiệu quả vận hành.
-- **Trạng thái**: Đang trong giai đoạn phê duyệt tài liệu đặc tả yêu cầu phần mềm và kiến trúc giải pháp (SRS/SAD).
+- **Trạng thái**: Đã hoàn thành phát triển mã nguồn (DEV) và tạo Pull Request #12.
 - **Chức năng chính**:
   - Dashboard tổng quan
   - Thống kê mượn sách theo thời gian

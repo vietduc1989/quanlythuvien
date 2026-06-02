@@ -20,7 +20,7 @@ public record GetLoansQuery(
     bool? IsOverdue = null,
     int PageNumber = 1,
     int PageSize = 10
-) : IRequest<Result<PaginatedList<LoanDto>>>;
+) : IRequest<ONENET.Domain.Common.Result<PaginatedList<LoanDto>>>;
 
 public class GetLoansQueryValidator : AbstractValidator<GetLoansQuery>
 {
@@ -34,7 +34,7 @@ public class GetLoansQueryValidator : AbstractValidator<GetLoansQuery>
     }
 }
 
-public class GetLoansQueryHandler : IRequestHandler<GetLoansQuery, Result<PaginatedList<LoanDto>>>
+public class GetLoansQueryHandler : IRequestHandler<GetLoansQuery, ONENET.Domain.Common.Result<PaginatedList<LoanDto>>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -43,7 +43,7 @@ public class GetLoansQueryHandler : IRequestHandler<GetLoansQuery, Result<Pagina
         _context = context;
     }
 
-    public async Task<Result<PaginatedList<LoanDto>>> Handle(GetLoansQuery request, CancellationToken cancellationToken)
+    public async Task<ONENET.Domain.Common.Result<PaginatedList<LoanDto>>> Handle(GetLoansQuery request, CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
 
@@ -118,6 +118,6 @@ public class GetLoansQueryHandler : IRequestHandler<GetLoansQuery, Result<Pagina
         // Tạo đối tượng PaginatedList<LoanDto> mới
         var result = new PaginatedList<LoanDto>(loanDtos, count, request.PageNumber, request.PageSize);
 
-        return Result<PaginatedList<LoanDto>>.Success(result);
+        return ONENET.Domain.Common.Result<PaginatedList<LoanDto>>.Success(result);
     }
 }

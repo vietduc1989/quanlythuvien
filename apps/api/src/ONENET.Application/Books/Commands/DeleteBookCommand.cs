@@ -40,8 +40,6 @@ public class DeleteBookCommandHandler : IRequestHandler<DeleteBookCommand>
             throw new NotFoundException(nameof(Book), request.Id);
         }
 
-        // Business Rule: Không cho phép xóa sách nếu đang có độc giả mượn
-        // Kiểm tra xem có chi tiết phiếu mượn nào của cuốn sách này đang ở trạng thái "DangMuon" (chưa trả) hay không
         bool isBorrowed = await _context.Set<ChiTietPhieuMuon>()
             .AnyAsync(ld => ld.SachId == request.Id && ld.TrangThaiChiTiet == "DangMuon", cancellationToken);
 

@@ -1,3 +1,4 @@
+// QUAN-20260601-1634
 using System;
 using System.Reflection;
 using System.Threading;
@@ -56,9 +57,17 @@ public class AppDbContext : DbContext, IApplicationDbContext, IUnitOfWork
                     entry.Entity.UpdatedBy = currentUserId;
                     entry.Entity.UpdatedAt = currentUtc;
                     break;
+
+                case EntityState.Deleted:
+                    entry.State = EntityState.Modified;
+                    entry.Entity.IsDeleted = true;
+                    entry.Entity.UpdatedBy = currentUserId;
+                    entry.Entity.UpdatedAt = currentUtc;
+                    break;
             }
         }
 
         return await base.SaveChangesAsync(cancellationToken);
     }
 }
+

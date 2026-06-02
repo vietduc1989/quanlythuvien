@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using FluentValidation;
 
 namespace ONENET.WebAPI.Middleware;
 
@@ -40,10 +39,38 @@ public class GlobalExceptionMiddleware
             var response = ApiResponse.FailureResult("Dữ liệu đầu vào không hợp lệ.", errors);
             await context.Response.WriteAsync(JsonSerializer.Serialize(response));
         }
+        catch (ONENET.Application.Common.Exceptions.ValidationException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+            var errors = ex.Errors
+                .SelectMany(kv => kv.Value.Select(message => new ApiError(kv.Key, message)))
+                .ToList();
+
+            var response = ApiResponse.FailureResult("Dữ liệu đầu vào không hợp lệ.", errors);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
         catch (NotFoundException ex)
         {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = StatusCodes.Status404NotFound;
+
+            var response = ApiResponse.FailureResult(ex.Message);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+        catch (ForbiddenException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+
+            var response = ApiResponse.FailureResult(ex.Message);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
 
             var response = ApiResponse.FailureResult(ex.Message);
             await context.Response.WriteAsync(JsonSerializer.Serialize(response));
@@ -60,3 +87,4 @@ public class GlobalExceptionMiddleware
         }
     }
 }
+
