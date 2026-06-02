@@ -1,0 +1,126 @@
+```yaml
+# .github/workflows/ci.yml
+# Pipeline CI/CD cho dự án "Quản lý độc giả" sử dụng GitHub Actions
+
+name: CI/CD Pipeline - Reader Management
+
+on:
+  push:
+    branches:
+      - main # Chạy pipeline khi push code lên nhánh main
+  pull_request:
+    branches:
+      - main # Chạy pipeline khi có Pull Request merge vào nhánh main
+  workflow_dispatch: # Cho phép chạy pipeline thủ công từ GitHub UI
+
+jobs:
+  build-and-test-api:
+    runs-on: ubuntu-latest # Chạy job trên môi trường Ubuntu mới nhất
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 # Bước checkout mã nguồn
+
+      - name: Setup .NET 10.0
+        uses: actions/setup-dotnet@v4 # Cài đặt .NET SDK phiên bản 10.0
+        with:
+          dotnet-version: '10.0.x' # Sử dụng 10.0.x để linh hoạt với các bản vá
+
+      - name: Restore API dependencies
+        run: dotnet restore apps/api/ReaderManagement.Api.csproj # Khôi phục các gói NuGet cho API
+
+      - name: Build API
+        run: dotnet build apps/api/ReaderManagement.Api.csproj --configuration Release --no-restore # Build ứng dụng API
+
+      - name: Run API tests
+        # Giả định các bài kiểm tra được đặt trong ReaderManagement.Api.csproj hoặc một project test riêng.
+        # Điều chỉnh đường dẫn nếu project test nằm ở nơi khác (ví dụ: apps/api.tests/...).
+        run: dotnet test apps/api/ReaderManagement.Api.csproj --configuration Release --no-build --verbosity normal # Chạy các bài kiểm tra tự động
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3 # Đăng nhập vào GitHub Container Registry (GHCR)
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }} # Sử dụng GITHUB_TOKEN để xác thực
+
+      - name: Build and Push API Docker Image
+        uses: docker/build-push-action@v5 # Build và đẩy Docker Image lên GHCR
+        with:
+          context: . # Context build là thư mục gốc của repo
+          file: apps/api/Dockerfile
+          push: true
+          tags: | # Tag image với 'latest' và SHA của commit
+            ghcr.io/${{ github.repository }}/readermanagement-api:latest
+            ghcr.io/${{ github.repository }}/readermanagement-api:${{ github.sha }}
+          cache-from: type=gha # Tối ưu hóa build bằng cách sử dụng cache từ GitHub Actions
+          cache-to: type=gha,mode=max
+
+  build-and-test-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4 # Cài đặt Node.js phiên bản 20.x cho frontend
+        with:
+          node-version: '20.x'
+          cache: 'npm' # Cache node modules để tăng tốc độ build
+          cache-dependency-path: 'apps/web/package-lock.json'
+
+      - name: Restore Web dependencies
+        working-directory: apps/web # Chạy lệnh trong thư mục apps/web
+        run: npm ci # Cài đặt các dependency từ package-lock.json
+
+      - name: Build Web application
+        working-directory: apps/web
+        run: npm run build # Build ứng dụng React Vite
+
+      - name: Lint Web application
+        # Giả định có script 'lint' được định nghĩa trong apps/web/package.json
+        working-directory: apps/web
+        run: npm run lint # Chạy kiểm tra linting code
+
+      - name: Run Web tests
+        # Giả định có script 'test' được định nghĩa trong apps/web/package.json
+        working-directory: apps/web
+        run: npm test # Chạy các bài kiểm tra tự động cho frontend
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Web Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: . # Context build là thư mục gốc của repo
+          file: apps/web/Dockerfile
+          push: true
+          tags: | # Tag image với 'latest' và SHA của commit
+            ghcr.io/${{ github.repository }}/readermanagement-web:latest
+            ghcr.io/${{ github.repository }}/readermanagement-web:${{ github.sha }}
+          cache-from: type=gha # Tối ưu hóa build bằng cách sử dụng cache từ GitHub Actions
+          cache-to: type=gha,mode=max
+
+  # deploy: # Job triển khai tùy chọn (có thể mở rộng sau này)
+  #   runs-on: ubuntu-latest
+  #   needs: [build-and-test-api, build-and-test-web] # Đảm bảo cả hai image đã được build và push thành công
+  #   environment: production # Ví dụ về việc sử dụng môi trường bảo vệ trên GitHub
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Deploy to Server
+  #       # Sử dụng SSH hoặc CLI của nhà cung cấp Cloud để triển khai ứng dụng
+  #       # Cần cấu hình SSH private key và host server trong GitHub Secrets.
+  #       env:
+  #         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  #         SERVER_HOST: ${{ secrets.PROD_SERVER_HOST }}
+  #       run: |
+  #         echo "$SSH_PRIVATE_KEY" > deploy_key
+  #         chmod 600 deploy_key
+  #         ssh -i deploy_key -o StrictHostKeyChecking=no user@$SERVER_HOST 'bash -s' < scripts/deploy.sh
+```

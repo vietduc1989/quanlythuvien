@@ -1,27 +1,40 @@
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+```dockerfile
+# apps/api/Dockerfile
 
+# --- STAGE 1: Build and Publish the .NET API ---
+# Sử dụng .NET SDK 10.0 để build ứng dụng.
+# Giả định .NET 10.0 sẽ được phát hành, hiện tại có thể dùng 8.0/9.0 cho mục đích phát triển.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["ONENET.slnx", "."]
-COPY ["src/ONENET.Domain/ONENET.Domain.csproj", "src/ONENET.Domain/"]
-COPY ["src/ONENET.Application/ONENET.Application.csproj", "src/ONENET.Application/"]
-COPY ["src/ONENET.Infrastructure/ONENET.Infrastructure.csproj", "src/ONENET.Infrastructure/"]
-COPY ["src/ONENET.WebAPI/ONENET.WebAPI.csproj", "src/ONENET.WebAPI/"]
-RUN dotnet restore
 
-COPY . .
-WORKDIR "/src/src/ONENET.WebAPI"
-RUN dotnet build -c $BUILD_CONFIGURATION -o /app/build
+# Sao chép file csproj và khôi phục các dependency
+# Điều này giúp tận dụng cache của Docker layer khi các dependency không thay đổi
+COPY ["apps/api/ReaderManagement.Api.csproj", "apps/api/"]
+RUN dotnet restore "apps/api/ReaderManagement.Api.csproj"
 
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+# Sao chép toàn bộ mã nguồn của ứng dụng API
+COPY apps/api/ .
 
-FROM base AS final
+# Build và publish ứng dụng ra thư mục /app/publish
+WORKDIR /src/apps/api
+RUN dotnet publish "ReaderManagement.Api.csproj" -c Release -o /app/publish --no-restore
+
+# --- STAGE 2: Runtime Image ---
+# Sử dụng ASP.NET runtime 10.0 để chạy ứng dụng đã publish.
+# Đây là image nhỏ gọn hơn nhiều so với SDK image.
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "ONENET.WebAPI.dll"]
+
+# Mở cổng mà API sẽ lắng nghe (mặc định cho ASP.NET Core trong Docker là 80, nhưng 8080 là an toàn hơn khi chạy non-root)
+EXPOSE 8080
+
+# Sao chép các file đã publish từ stage 'build' vào image runtime
+COPY --from=build /app/publish .
+
+# Chạy container dưới quyền người dùng 'app' không phải root
+# Người dùng 'app' được cung cấp sẵn trong các base image của Microsoft và là một best practice bảo mật.
+USER app
+
+# Định nghĩa lệnh khởi chạy ứng dụng API
+ENTRYPOINT ["dotnet", "ReaderManagement.Api.dll"]
+```
