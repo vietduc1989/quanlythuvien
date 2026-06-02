@@ -28,7 +28,7 @@ public class GlobalExceptionMiddleware
         {
             await _next(context);
         }
-        catch (ValidationException ex)
+        catch (FluentValidation.ValidationException ex)
         {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = StatusCodes.Status400BadRequest;

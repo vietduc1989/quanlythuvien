@@ -1,7 +1,11 @@
+// QUAN-20260601-105011
 using System;
 
 namespace ONENET.Domain.Entities;
 
+/// <summary>
+/// Lớp cơ sở cho các entity trong hệ thống, bao gồm các trường audit và soft delete.
+/// </summary>
 public abstract class BaseEntity
 {
     public Guid Id { get; set; } = Guid.NewGuid();

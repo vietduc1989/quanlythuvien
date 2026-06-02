@@ -47,7 +47,7 @@ public class DeleteBookCommandHandler : IRequestHandler<DeleteBookCommand>
 
         if (isBorrowed)
         {
-            throw new ValidationException("Không thể xóa sách vì hiện tại đang có độc giả mượn cuốn sách này.");
+            throw new FluentValidation.ValidationException("Không thể xóa sách vì hiện tại đang có độc giả mượn cuốn sách này.");
         }
 
         // Soft Delete
