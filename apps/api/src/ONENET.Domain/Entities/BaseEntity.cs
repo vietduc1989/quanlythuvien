@@ -1,10 +1,10 @@
-// QUAN-20260601-1634
+// QUAN-20260601-105011
 using System;
 
 namespace ONENET.Domain.Entities;
 
 /// <summary>
-/// Base entity class providing common audit fields and soft delete functionality.
+/// Lớp cơ sở cho các entity trong hệ thống, bao gồm các trường audit và soft delete.
 /// </summary>
 public abstract class BaseEntity
 {
@@ -15,4 +15,5 @@ public abstract class BaseEntity
     public string? UpdatedBy { get; set; }
     public bool IsDeleted { get; set; } = false;
 }
+
 

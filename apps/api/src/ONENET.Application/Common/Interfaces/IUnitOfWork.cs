@@ -1,11 +1,13 @@
-// QUAN-20260601-1634
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ONENET.Application.Common.Interfaces
+namespace ONENET.Application.Common.Interfaces;
+
+/// <summary>
+/// Interface đại diện cho Unit of Work, quản lý việc lưu các thay đổi.
+/// </summary>
+public interface IUnitOfWork
 {
-    public interface IUnitOfWork
-    {
-        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-    }
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
+

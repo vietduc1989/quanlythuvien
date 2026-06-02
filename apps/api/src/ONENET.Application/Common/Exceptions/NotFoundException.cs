@@ -6,19 +6,14 @@ namespace ONENET.Application.Common.Exceptions;
 public class NotFoundException : Exception
 {
     public NotFoundException()
-        : base()
-    {
-    }
+        : base() { }
 
-    public NotFoundException(string message)
-        : base(message)
+    public NotFoundException(string message) : base(message)
     {
     }
 
     public NotFoundException(string message, Exception innerException)
-        : base(message, innerException)
-    {
-    }
+        : base(message, innerException) { }
 
     public NotFoundException(string name, object key)
         : base($"Thực thể \"{name}\" ({key}) không tồn tại trong hệ thống.")

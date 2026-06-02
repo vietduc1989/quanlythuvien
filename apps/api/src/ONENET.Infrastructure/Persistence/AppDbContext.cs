@@ -9,19 +9,25 @@ using ONENET.Domain.Entities;
 
 namespace ONENET.Infrastructure.Persistence;
 
-public class AppDbContext : DbContext, IApplicationDbContext
+/// <summary>
+/// DbContext cho ứng dụng ONENET, quản lý các Entity và tương tác với cơ sở dữ liệu.
+/// Implement IApplicationDbContext và IUnitOfWork.
+/// </summary>
+public class AppDbContext : DbContext, IApplicationDbContext, IUnitOfWork
 {
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTime _dateTime;
 
     public DbSet<PhieuMuon> PhieuMuons => Set<PhieuMuon>();
     public DbSet<ChiTietPhieuMuon> ChiTietPhieuMuons => Set<ChiTietPhieuMuon>();
     public DbSet<Book> Books => Set<Book>();
     public DbSet<Reader> Readers => Set<Reader>();
 
-    public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser currentUser)
+    public AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser currentUser, IDateTime dateTime)
         : base(options)
     {
         _currentUser = currentUser;
+        _dateTime = dateTime;
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -32,25 +38,31 @@ public class AppDbContext : DbContext, IApplicationDbContext
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        var currentUserId = _currentUser.UserId ?? "System";
+        var currentUtc = _dateTime.UtcNow;
+
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
-            var userId = _currentUser.UserId ?? "System";
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.CreatedAt = DateTime.UtcNow;
-                    entry.Entity.CreatedBy = userId;
+                    entry.Entity.CreatedBy = currentUserId;
+                    entry.Entity.CreatedAt = currentUtc;
+                    entry.Entity.UpdatedBy = currentUserId;
+                    entry.Entity.UpdatedAt = currentUtc;
                     entry.Entity.IsDeleted = false;
                     break;
+
                 case EntityState.Modified:
-                    entry.Entity.UpdatedAt = DateTime.UtcNow;
-                    entry.Entity.UpdatedBy = userId;
+                    entry.Entity.UpdatedBy = currentUserId;
+                    entry.Entity.UpdatedAt = currentUtc;
                     break;
+
                 case EntityState.Deleted:
                     entry.State = EntityState.Modified;
                     entry.Entity.IsDeleted = true;
-                    entry.Entity.UpdatedAt = DateTime.UtcNow;
-                    entry.Entity.UpdatedBy = userId;
+                    entry.Entity.UpdatedBy = currentUserId;
+                    entry.Entity.UpdatedAt = currentUtc;
                     break;
             }
         }
