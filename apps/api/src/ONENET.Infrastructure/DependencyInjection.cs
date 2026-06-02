@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ONENET.Infrastructure.Persistence;
 using ONENET.Application.Common.Interfaces;
+using ONENET.Infrastructure.Persistence;
 
 namespace ONENET.Infrastructure;
 
