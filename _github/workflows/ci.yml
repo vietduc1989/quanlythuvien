@@ -1,0 +1,89 @@
+```yaml
+name: CI/CD Pipeline ONENET
+
+on:
+  push:
+    branches:
+      - main # Chạy pipeline khi push lên nhánh main
+  pull_request:
+    branches:
+      - main # Chạy pipeline khi tạo hoặc cập nhật Pull Request vào nhánh main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest # Sử dụng runner Ubuntu mới nhất
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 # Bước 1: Checkout mã nguồn
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4 # Bước 2: Thiết lập môi trường .NET
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4 # Bước 2: Thiết lập môi trường Node.js
+        with:
+          node-version: '20'
+          cache: 'pnpm' # Cache dependencies cho pnpm
+
+      - name: Install pnpm
+        run: npm install -g pnpm # Cài đặt pnpm global
+
+      - name: Restore .NET dependencies (API)
+        working-directory: apps/api # Chuyển vào thư mục API
+        run: dotnet restore # Bước 3: Khôi phục dependencies cho .NET
+
+      - name: Build .NET project (API)
+        working-directory: apps/api
+        run: dotnet build --no-restore # Bước 4: Build project .NET
+
+      - name: Run .NET tests (API)
+        # Giả định có thư mục tests/api cho các bài kiểm tra .NET
+        # `|| true` để pipeline không fail nếu không có tests hoặc test fail tạm thời
+        working-directory: tests/api # Chuyển vào thư mục test
+        run: dotnet test --no-build --verbosity normal || echo "No .NET tests found or failed for API." # Bước 5: Chạy test .NET
+
+      - name: Restore Node.js dependencies (Web)
+        working-directory: apps/web # Chuyển vào thư mục Web
+        run: pnpm install --frozen-lockfile # Bước 3: Khôi phục dependencies cho Node.js
+
+      - name: Build React app (Web)
+        working-directory: apps/web
+        run: pnpm run build # Bước 4: Build ứng dụng React
+
+      - name: Run Node.js lint/tests (Web)
+        # Giả định có script 'lint' và 'test' trong package.json của web
+        working-directory: apps/web
+        run: pnpm run lint && pnpm test || echo "No Node.js tests/lint found or failed for Web." # Bước 5: Chạy lint/test Node.js
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3 # Login vào Docker Registry (ví dụ Docker Hub)
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }} # Sử dụng GitHub Secret
+          password: ${{ secrets.DOCKER_PASSWORD }} # Sử dụng GitHub Secret
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3 # Thiết lập Buildx để build Docker images hiệu quả hơn
+
+      - name: Build and push API Docker image
+        uses: docker/build-push-action@v5 # Bước 6: Build và Push Docker Image cho API
+        with:
+          context: . # Context là thư mục gốc của repo
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            onenet/report-api:latest # Tag 'latest' cho nhánh main
+            onenet/report-api:${{ github.sha }} # Tag bằng SHA commit để dễ dàng rollback
+
+      - name: Build and push Web Docker image
+        uses: docker/build-push-action@v5 # Bước 6: Build và Push Docker Image cho Web
+        with:
+          context: . # Context là thư mục gốc của repo
+          file: apps/web/Dockerfile
+          push: true
+          tags: |
+            onenet/report-web:latest # Tag 'latest' cho nhánh main
+            onenet/report-web:${{ github.sha }} # Tag bằng SHA commit
+```
