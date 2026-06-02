@@ -28,6 +28,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<ONENET.WebAPI.Middleware.GlobalExceptionMiddleware>();
+
 app.UseAuthorization();
 
 app.MapControllers();
