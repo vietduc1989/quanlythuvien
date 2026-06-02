@@ -1,19 +1,69 @@
+# docker-compose.yml
+# Cấu hình triển khai cho ứng dụng Book Management
+# Sử dụng Docker Compose để định nghĩa và chạy các dịch vụ multi-container
+
 version: '3.8'
 
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: quanlythuvien_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: quanlythuvien_db
+  # Service cho ứng dụng API .NET
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: book-management-api
     ports:
-      - "5432:5432"
+      - "8080:8080" # Map host port 8080 to container port 8080
+    environment:
+      # Biến môi trường cho API, được đọc từ file .env
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_STRING}
+      # Thêm các biến môi trường khác nếu cần
+    depends_on:
+      db:
+        condition: service_healthy # Đảm bảo DB sẵn sàng trước khi khởi động API
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"] # Giả sử có endpoint /health
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s # Thời gian chờ ban đầu cho ứng dụng khởi động
+
+  # Service cho ứng dụng Frontend React
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: book-management-web
+    ports:
+      - "80:80" # Map host port 80 to container port 80 (cho production)
+      # - "3000:80" # Nếu muốn chạy trên port 3000 của host
+    environment:
+      # Biến môi trường cho Frontend (ví dụ: URL của API)
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080/api} # URL API mà frontend sẽ gọi (sử dụng Nginx proxy)
+    depends_on:
+      api:
+        condition: service_healthy # Đảm bảo API sẵn sàng trước khi frontend cố gắng kết nối
+
+  # Service cho Database PostgreSQL
+  db:
+    image: postgres:15-alpine # Sử dụng phiên bản PostgreSQL 15 Alpine để có kích thước nhỏ
+    container_name: book-management-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data # Lưu trữ dữ liệu DB vào volume để đảm bảo bền vững
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"] # Kiểm tra trạng thái DB
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # Thời gian chờ ban đầu cho DB khởi động
 
 volumes:
-  pgdata:
-    driver: local
+  db_data: # Định nghĩa volume để lưu trữ dữ liệu DB
+
+networks:
+  default:
+    driver: bridge # Sử dụng network mặc định

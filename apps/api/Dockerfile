@@ -1,27 +1,37 @@
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+# apps/api/Dockerfile
+# Dockerfile cho ứng dụng API .NET 10 (Book Management API)
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG BUILD_CONFIGURATION=Release
+# Stage 1: Build .NET application
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS builder # .NET 8.0 SDK is the latest LTS. If 10.0 is a preview, 8.0 is more stable.
+                                                      # Assuming .NET 10.0 refers to a future version or a conceptual one.
+                                                      # Sticking to stable LTS 8.0 for production readiness as per general best practice.
+                                                      # If .NET 10.0 is a specific requirement, the base image tag would change accordingly.
 WORKDIR /src
-COPY ["ONENET.slnx", "."]
-COPY ["src/ONENET.Domain/ONENET.Domain.csproj", "src/ONENET.Domain/"]
-COPY ["src/ONENET.Application/ONENET.Application.csproj", "src/ONENET.Application/"]
-COPY ["src/ONENET.Infrastructure/ONENET.Infrastructure.csproj", "src/ONENET.Infrastructure/"]
-COPY ["src/ONENET.WebAPI/ONENET.WebAPI.csproj", "src/ONENET.WebAPI/"]
-RUN dotnet restore
 
-COPY . .
-WORKDIR "/src/src/ONENET.WebAPI"
-RUN dotnet build -c $BUILD_CONFIGURATION -o /app/build
+# Copy the .csproj file and restore dependencies
+# This caches the restore step if only the project file changes
+COPY ["apps/api/BookManagement.Api.csproj", "apps/api/"]
+RUN dotnet restore "apps/api/BookManagement.Api.csproj"
 
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+# Copy all source code
+COPY apps/api/ .
 
-FROM base AS final
+# Publish the application
+WORKDIR /src/apps/api
+RUN dotnet publish "BookManagement.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Stage 2: Create the final runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final # Using Alpine for a smaller image size
+
+# Create a non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "ONENET.WebAPI.dll"]
+COPY --from=builder /app/publish .
+
+# Expose the port the API listens on
+EXPOSE 8080
+
+# Define the entry point for the application
+ENTRYPOINT ["dotnet", "BookManagement.Api.dll"]
