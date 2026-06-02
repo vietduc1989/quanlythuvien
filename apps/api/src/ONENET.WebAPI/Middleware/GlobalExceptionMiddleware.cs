@@ -1,73 +1,90 @@
-// QUAN-20260601-1634
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using ONENET.Application.Common.Exceptions;
-using ONENET.WebAPI.Common;
+using ONENET.WebAPI.Models;
 using System;
-using System.Net;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace ONENET.WebAPI.Middleware
+namespace ONENET.WebAPI.Middleware;
+
+public class GlobalExceptionMiddleware
 {
-    public class GlobalExceptionMiddleware
+    private readonly RequestDelegate _next;
+    private readonly ILogger<GlobalExceptionMiddleware> _logger;
+
+    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
     {
-        private readonly RequestDelegate _next;
-        private readonly ILogger<GlobalExceptionMiddleware> _logger;
+        _next = next;
+        _logger = logger;
+    }
 
-        public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
         {
-            _next = next;
-            _logger = logger;
+            await _next(context);
         }
-
-        public async Task InvokeAsync(HttpContext httpContext)
-        {
-            try
-            {
-                await _next(httpContext);
-            }
-            catch (Exception ex)
-            {
-                await HandleExceptionAsync(httpContext, ex);
-            }
-        }
-
-        private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+        catch (FluentValidation.ValidationException ex)
         {
             context.Response.ContentType = "application/json";
-            var response = new ApiResponse(false);
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
 
-            switch (exception)
-            {
-                case ValidationException validationException:
-                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    response.Message = "Validation failed";
-                    response.Errors = validationException.Errors.SelectMany(x => x.Value.Select(v => new ApiError { Field = x.Key, Message = v })).ToList();
-                    _logger.LogWarning(validationException, "Validation error occurred: {Message}", validationException.Message);
-                    break;
-                case NotFoundException notFoundException:
-                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                    response.Message = notFoundException.Message;
-                    _logger.LogWarning(notFoundException, "Resource not found: {Message}", notFoundException.Message);
-                    break;
-                case ForbiddenException forbiddenException:
-                    context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
-                    response.Message = forbiddenException.Message;
-                    _logger.LogWarning(forbiddenException, "Forbidden access: {Message}", forbiddenException.Message);
-                    break;
-                case UnauthorizedAccessException unauthorizedAccessException:
-                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    response.Message = unauthorizedAccessException.Message;
-                    _logger.LogWarning(unauthorizedAccessException, "Unauthorized access: {Message}", unauthorizedAccessException.Message);
-                    break;
-                default:
-                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    response.Message = "An unexpected error occurred.";
-                    _logger.LogError(exception, "An unhandled exception occurred: {Message}", exception.Message);
-                    break;
-            }
+            var errors = ex.Errors
+                .Select(e => new ApiError(e.PropertyName, e.ErrorMessage))
+                .ToList();
 
-            await context.Response.WriteAsJsonAsync(response);
+            var response = ApiResponse.FailureResult("Dữ liệu đầu vào không hợp lệ.", errors);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+        catch (ONENET.Application.Common.Exceptions.ValidationException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+            var errors = ex.Errors
+                .SelectMany(kv => kv.Value.Select(message => new ApiError(kv.Key, message)))
+                .ToList();
+
+            var response = ApiResponse.FailureResult("Dữ liệu đầu vào không hợp lệ.", errors);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+        catch (NotFoundException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+
+            var response = ApiResponse.FailureResult(ex.Message);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+        catch (ForbiddenException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+
+            var response = ApiResponse.FailureResult(ex.Message);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+            var response = ApiResponse.FailureResult(ex.Message);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Đã xảy ra lỗi hệ thống không mong muốn.");
+
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+            var response = ApiResponse.FailureResult($"Lỗi hệ thống: {ex.Message}");
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
         }
     }
 }
+
