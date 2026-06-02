@@ -13,9 +13,9 @@ public record GetReaderByIdQuery(Guid Id) : IRequest<Result<ReaderDto>>;
 
 public class GetReaderByIdQueryHandler : IRequestHandler<GetReaderByIdQuery, Result<ReaderDto>>
 {
-    private readonly IAppDbContext _context;
+    private readonly IApplicationDbContext _context;
 
-    public GetReaderByIdQueryHandler(IAppDbContext context)
+    public GetReaderByIdQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }

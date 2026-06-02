@@ -13,7 +13,7 @@ Tính năng "Quản lý độc giả" là module cốt lõi trong hệ thống t
     *   **Kiến trúc:** Clean Architecture, CQRS + MediatR trên .NET 10, ASP.NET Web API. Database PostgreSQL.
 
 **3. Ràng buộc (Constraints):**
-*   **Dữ liệu:** `ReaderCode` và `PhoneNumber` phải là duy nhất. `ExpiryDate` phải >= `RegistrationDate`. Các trường bắt buộc và validation chặt chẽ.
+*   **Dữ liệu:** `ReaderCode` và `PhoneNumber` phải là duy nhất. `ExpiryDate` phải >= `RegistrationDate`. Độc giả phải trên 16 tuổi (tính đến ngày đăng ký thẻ). Các trường bắt buộc và validation chặt chẽ.
 *   **Công nghệ:** Backend: .NET 10, ASP.NET Web API, EF Core, PostgreSQL. Frontend: React, Mantine UI.
 *   **Kiến trúc DB:** Entity `Reader` (Id: UUID PK, ReaderCode: UK, PhoneNumber: UK, Status: enum). Sử dụng các trường audit `CreatedAt/By`, `LastModifiedAt/By`.
 

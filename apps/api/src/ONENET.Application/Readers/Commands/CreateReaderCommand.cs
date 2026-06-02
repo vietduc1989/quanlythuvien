@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using ONENET.Application.Common.Interfaces;
 using ONENET.Domain.Common;
 using ONENET.Domain.Entities;
+using ONENET.Domain.Enums;
 
 namespace ONENET.Application.Readers.Commands;
 
@@ -32,7 +33,9 @@ public class CreateReaderCommandValidator : AbstractValidator<CreateReaderComman
 
         RuleFor(x => x.DateOfBirth)
             .NotEmpty().WithMessage("Ngày sinh không được để trống.")
-            .Must(dob => dob <= DateTime.UtcNow).WithMessage("Ngày sinh không được lớn hơn ngày hiện tại.");
+            .Must(dob => dob <= DateTime.UtcNow).WithMessage("Ngày sinh không được lớn hơn ngày hiện tại.")
+            .Must((command, dob) => BeAtLeast16YearsOld(dob, command.RegistrationDate ?? DateTime.UtcNow))
+            .WithMessage("Độc giả phải từ 16 tuổi trở lên tính đến ngày đăng ký thẻ.");
 
         RuleFor(x => x.PhoneNumber)
             .NotEmpty().WithMessage("Số điện thoại không được để trống.")
@@ -51,13 +54,23 @@ public class CreateReaderCommandValidator : AbstractValidator<CreateReaderComman
             .WithMessage("Ngày hết hạn thẻ không được nhỏ hơn ngày đăng ký.")
             .When(x => x.ExpiryDate.HasValue);
     }
+
+    private static bool BeAtLeast16YearsOld(DateTime dob, DateTime registrationDate)
+    {
+        var age = registrationDate.Year - dob.Year;
+        if (dob.AddYears(16) > registrationDate)
+        {
+            age--;
+        }
+        return age >= 16;
+    }
 }
 
 public class CreateReaderCommandHandler : IRequestHandler<CreateReaderCommand, Result<Guid>>
 {
-    private readonly IAppDbContext _context;
+    private readonly IApplicationDbContext _context;
 
-    public CreateReaderCommandHandler(IAppDbContext context)
+    public CreateReaderCommandHandler(IApplicationDbContext context)
     {
         _context = context;
     }
@@ -100,7 +113,8 @@ public class CreateReaderCommandHandler : IRequestHandler<CreateReaderCommand, R
             request.Email,
             request.Address,
             regDate,
-            expDate
+            expDate,
+            ReaderStatus.Active
         );
 
         _context.Readers.Add(reader);

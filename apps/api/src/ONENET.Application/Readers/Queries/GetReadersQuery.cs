@@ -22,9 +22,9 @@ public record GetReadersQuery : IRequest<Result<PaginatedList<ReaderDto>>>
 
 public class GetReadersQueryHandler : IRequestHandler<GetReadersQuery, Result<PaginatedList<ReaderDto>>>
 {
-    private readonly IAppDbContext _context;
+    private readonly IApplicationDbContext _context;
 
-    public GetReadersQueryHandler(IAppDbContext context)
+    public GetReadersQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }

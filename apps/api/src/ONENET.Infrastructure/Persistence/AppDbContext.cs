@@ -3,18 +3,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ONENET.Application.Common.Interfaces;
-using ONENET.Domain.Common;
 using ONENET.Domain.Entities;
 
 namespace ONENET.Infrastructure.Persistence;
 
-public class AppDbContext : DbContext, IAppDbContext
+public class AppDbContext : DbContext, IApplicationDbContext
 {
+    public DbSet<PhieuMuon> PhieuMuons => Set<PhieuMuon>();
+    public DbSet<ChiTietPhieuMuon> ChiTietPhieuMuons => Set<ChiTietPhieuMuon>();
+    public DbSet<Book> Books => Set<Book>();
+    public DbSet<Reader> Readers => Set<Reader>();
+
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
     }
-
-    public DbSet<Reader> Readers => Set<Reader>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,7 +24,7 @@ public class AppDbContext : DbContext, IAppDbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {
@@ -35,12 +37,12 @@ public class AppDbContext : DbContext, IAppDbContext
                     break;
 
                 case EntityState.Modified:
-                    entry.Entity.LastModifiedAt = DateTime.UtcNow;
-                    entry.Entity.LastModifiedBy = "System";
+                    entry.Entity.UpdatedAt = DateTime.UtcNow;
+                    entry.Entity.UpdatedBy = "System";
                     break;
             }
         }
 
-        return base.SaveChangesAsync(cancellationToken);
+        return await base.SaveChangesAsync(cancellationToken);
     }
 }

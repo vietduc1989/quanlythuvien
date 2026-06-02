@@ -35,7 +35,8 @@ public class UpdateReaderCommandValidator : AbstractValidator<UpdateReaderComman
 
         RuleFor(x => x.DateOfBirth)
             .NotEmpty().WithMessage("Ngày sinh không được để trống.")
-            .Must(dob => dob <= DateTime.UtcNow).WithMessage("Ngày sinh không được lớn hơn ngày hiện tại.");
+            .Must(dob => dob <= DateTime.UtcNow).WithMessage("Ngày sinh không được lớn hơn ngày hiện tại.")
+            .Must(dob => BeAtLeast16YearsOld(dob)).WithMessage("Độc giả phải từ 16 tuổi trở lên.");
 
         RuleFor(x => x.PhoneNumber)
             .NotEmpty().WithMessage("Số điện thoại không được để trống.")
@@ -49,13 +50,23 @@ public class UpdateReaderCommandValidator : AbstractValidator<UpdateReaderComman
         RuleFor(x => x.Address)
             .MaximumLength(500).WithMessage("Địa chỉ không quá 500 ký tự.");
     }
+
+    private static bool BeAtLeast16YearsOld(DateTime dob)
+    {
+        var age = DateTime.UtcNow.Year - dob.Year;
+        if (dob.AddYears(16) > DateTime.UtcNow)
+        {
+            age--;
+        }
+        return age >= 16;
+    }
 }
 
 public class UpdateReaderCommandHandler : IRequestHandler<UpdateReaderCommand, Result>
 {
-    private readonly IAppDbContext _context;
+    private readonly IApplicationDbContext _context;
 
-    public UpdateReaderCommandHandler(IAppDbContext context)
+    public UpdateReaderCommandHandler(IApplicationDbContext context)
     {
         _context = context;
     }
@@ -77,6 +88,17 @@ public class UpdateReaderCommandHandler : IRequestHandler<UpdateReaderCommand, R
         if (isPhoneExists)
         {
             return Result.Failure($"Số điện thoại '{request.PhoneNumber}' đã tồn tại trong hệ thống ở tài khoản khác.");
+        }
+
+        // Business Rule: Độ tuổi phải từ 16 tuổi trở lên tính đến ngày đăng ký thẻ
+        var age = reader.RegistrationDate.Year - request.DateOfBirth.Year;
+        if (request.DateOfBirth.AddYears(16) > reader.RegistrationDate)
+        {
+            age--;
+        }
+        if (age < 16)
+        {
+            return Result.Failure("Độc giả phải từ 16 tuổi trở lên tính đến ngày đăng ký thẻ.");
         }
 
         reader.FullName = request.FullName;

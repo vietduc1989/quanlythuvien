@@ -76,17 +76,24 @@ public class ReaderConfiguration : IEntityTypeConfiguration<Reader>
             .HasMaxLength(100)
             .IsRequired();
 
-        builder.Property(r => r.LastModifiedAt)
-            .HasColumnName("last_modified_at");
+        builder.Property(r => r.UpdatedAt)
+            .HasColumnName("updated_at");
 
-        builder.Property(r => r.LastModifiedBy)
-            .HasColumnName("last_modified_by")
+        builder.Property(r => r.UpdatedBy)
+            .HasColumnName("updated_by")
             .HasMaxLength(100);
 
         builder.Property(r => r.IsDeleted)
             .HasColumnName("is_deleted")
             .IsRequired()
             .HasDefaultValue(false);
+
+        // Concurrency token using xmin in PostgreSQL
+        builder.Property<uint>("xmin")
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken();
 
         // Global query filter to exclude soft deleted readers
         builder.HasQueryFilter(r => !r.IsDeleted);

@@ -20,7 +20,7 @@ public class Reader : BaseEntity
     {
     }
 
-    public Reader(string readerCode, string fullName, DateTime dateOfBirth, string phoneNumber, string? email, string? address, DateTime registrationDate, DateTime expiryDate)
+    public Reader(string readerCode, string fullName, DateTime dateOfBirth, string phoneNumber, string? email, string? address, DateTime registrationDate, DateTime expiryDate, ReaderStatus status)
     {
         ReaderCode = readerCode;
         FullName = fullName;
@@ -30,6 +30,6 @@ public class Reader : BaseEntity
         Address = address;
         RegistrationDate = registrationDate;
         ExpiryDate = expiryDate;
-        Status = ReaderStatus.Active;
+        Status = status;
     }
 }
