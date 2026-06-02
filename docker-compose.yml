@@ -1,19 +1,83 @@
+#
+# docker-compose.yml - Cấu hình triển khai cục bộ cho dự án Quản lý mượn trả sách
+# Orchestrate các service: PostgreSQL (db), .NET API (api), React Web (web).
+# Xử lý Environment Variables qua file .env.
+# Đặt healthcheck cho database và API.
+#
+
 version: '3.8'
 
+# Sử dụng một network riêng để cách ly các service
+networks:
+  book-lending-network:
+    driver: bridge
+
+# Các volume để lưu trữ dữ liệu bền vững
+volumes:
+  db-data:
+    driver: local
+
 services:
+  # --- PostgreSQL Database Service ---
   db:
-    image: postgres:15-alpine
-    container_name: quanlythuvien_postgres
+    image: postgres:15-alpine # Sử dụng phiên bản PostgreSQL ổn định và nhẹ
+    container_name: book-lending-db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: quanlythuvien_db
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Mở cổng 5432 của container ra host
+    networks:
+      - book-lending-network
+    healthcheck: # Healthcheck cho database
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s # Cho phép DB khởi động trước khi bắt đầu kiểm tra
 
-volumes:
-  pgdata:
-    driver: local
+  # --- .NET 10 API Service ---
+  api:
+    build:
+      context: . # Build context là thư mục gốc của dự án
+      dockerfile: apps/api/Dockerfile # Chỉ định Dockerfile cho API
+    container_name: book-lending-api
+    restart: always
+    environment:
+      ASPNETCORE_URLS: http://+:8080 # API lắng nghe trên cổng 8080
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ASPNETCORE_ENVIRONMENT: Development # Hoặc Production khi deploy
+    ports:
+      - "8080:8080" # Mở cổng 8080 của container ra host
+    networks:
+      - book-lending-network
+    depends_on: # API phụ thuộc vào database
+      db:
+        condition: service_healthy # Chỉ khởi động API khi DB đã sẵn sàng
+    healthcheck: # Healthcheck cho API
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"] # Giả định API có endpoint /health
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # --- React Vite Web Frontend Service ---
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args: # Truyền biến môi trường VITE_API_BASE_URL vào build stage của Dockerfile
+        VITE_API_BASE_URL: /api # Frontend sẽ gọi API qua proxy Nginx tại /api
+    container_name: book-lending-web
+    restart: always
+    ports:
+      - "3000:80" # Mở cổng 3000 của host tới cổng 80 của Nginx trong container
+    networks:
+      - book-lending-network
+    depends_on: # Web phụ thuộc vào API (để đảm bảo API sẵn sàng trước khi web hoạt động đầy đủ)
+      api:
+        condition: service_healthy # Chỉ khởi động Web khi API đã sẵn sàng
