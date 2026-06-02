@@ -1,6 +1,7 @@
 // QUAN-20260601-105011
 using MediatR;
 using ONENET.Application.Common.Models;
+using ONENET.Domain.Common;
 using ONENET.Application.Features.Readers.DTOs;
 using ONENET.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -42,8 +43,8 @@ public class GetReadersListQueryHandler : IRequestHandler<GetReadersListQuery, R
             PhoneNumber = r.PhoneNumber,
             Email = r.Email,
             Status = r.Status,
-            RegistrationDate = r.RegistrationDate,
-            ExpiryDate = r.ExpiryDate
+            RegistrationDate = DateOnly.FromDateTime(r.RegistrationDate),
+            ExpiryDate = DateOnly.FromDateTime(r.ExpiryDate)
         }).ToList();
 
         var paginatedList = new PaginatedList<ReaderListItemDto>(

@@ -102,7 +102,6 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
-// Use authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
 

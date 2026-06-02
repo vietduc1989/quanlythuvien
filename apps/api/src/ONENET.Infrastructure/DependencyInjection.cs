@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ONENET.Application.Common.Interfaces;
 using ONENET.Domain.Interfaces;
 using ONENET.Infrastructure.Persistence;
@@ -18,10 +19,7 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
-                .UseSnakeCaseNamingConvention() // Sử dụng snake_case cho tên bảng và cột
                 .LogTo(Log.Logger.Debug, LogLevel.Information)); // Logging EF Core queries
-
-        services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>()); // AppDbContext cũng là IUnitOfWork
 
@@ -30,6 +28,8 @@ public static class DependencyInjection
         services.AddTransient<IReaderCodeGenerator, ReaderCodeGenerator>();
 
         services.AddScoped<IReaderRepository, ReaderRepository>();
+
+        services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
         return services;
     }

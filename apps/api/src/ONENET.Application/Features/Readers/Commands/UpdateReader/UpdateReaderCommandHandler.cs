@@ -2,7 +2,7 @@
 using MediatR;
 using ONENET.Application.Common.Exceptions;
 using ONENET.Application.Common.Interfaces;
-using ONENET.Application.Common.Models;
+using ONENET.Domain.Common;
 using ONENET.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -42,13 +42,13 @@ public class UpdateReaderCommandHandler : IRequestHandler<UpdateReaderCommand, R
 
         // Concurrency check: BRD đề cập đến xmin nhưng cũng nói có thể dùng LastModifiedAt.
         // Đây là cách đơn giản để thực hiện optimistic concurrency control.
-        if (request.LastModifiedAtClient.HasValue && reader.LastModifiedAt.HasValue &&
-            reader.LastModifiedAt.Value.Ticks != request.LastModifiedAtClient.Value.Ticks)
+        if (request.LastModifiedAtClient.HasValue && reader.UpdatedAt.HasValue &&
+            reader.UpdatedAt.Value.Ticks != request.LastModifiedAtClient.Value.Ticks)
         {
             // Có xung đột, trả về lỗi 409 Conflict thông qua GlobalExceptionMiddleware
             // Message này sẽ được middleware bắt và chuyển thành lỗi phù hợp
             _logger.LogWarning("UpdateReaderCommand concurrency conflict for Reader ID {ReaderId}. Client's LastModifiedAt: {ClientTime}, DB's LastModifiedAt: {DbTime}",
-                request.ReaderId, request.LastModifiedAtClient.Value, reader.LastModifiedAt.Value);
+                request.ReaderId, request.LastModifiedAtClient.Value, reader.UpdatedAt.Value);
             return Result<Guid>.Failure("Concurrency conflict: The reader record has been modified by another user. Please refresh and try again.");
         }
 
@@ -63,14 +63,28 @@ public class UpdateReaderCommandHandler : IRequestHandler<UpdateReaderCommand, R
             }
         }
 
+        // BR05: Đọc giả phải trên 16 tuổi (tính đến ngày đăng ký thẻ)
+        var targetDob = request.DateOfBirth ?? DateOnly.FromDateTime(reader.DateOfBirth);
+        var targetRegDate = request.RegistrationDate ?? DateOnly.FromDateTime(reader.RegistrationDate);
+        var age = targetRegDate.Year - targetDob.Year;
+        if (targetDob.AddYears(16) > targetRegDate)
+        {
+            age--;
+        }
+        if (age < 16)
+        {
+            _logger.LogWarning("UpdateReaderCommand failed: Reader with ID {ReaderId} must be at least 16 years old.", request.ReaderId);
+            return Result<Guid>.Failure("Độc giả phải từ 16 tuổi trở lên tính đến ngày đăng ký thẻ.");
+        }
+
         reader.Update(
             fullName: request.FullName,
-            dateOfBirth: request.DateOfBirth,
+            dateOfBirth: request.DateOfBirth?.ToDateTime(TimeOnly.MinValue),
             phoneNumber: request.PhoneNumber,
             email: request.Email,
             address: request.Address,
-            registrationDate: request.RegistrationDate,
-            expiryDate: request.ExpiryDate,
+            registrationDate: request.RegistrationDate?.ToDateTime(TimeOnly.MinValue),
+            expiryDate: request.ExpiryDate?.ToDateTime(TimeOnly.MinValue),
             status: request.Status,
             updatedBy: _currentUser.UserId ?? "System"
         );

@@ -1,4 +1,5 @@
-// QUAN-20260601-105011
+using System;
+using ONENET.Domain.Common;
 using ONENET.Domain.Enums;
 
 namespace ONENET.Domain.Entities;
@@ -9,30 +10,29 @@ namespace ONENET.Domain.Entities;
 /// </summary>
 public class Reader : BaseEntity
 {
-    public string ReaderCode { get; private set; } = default!; // BR01: Mã độc giả duy nhất, tự sinh
-    public string FullName { get; private set; } = default!;
-    public DateOnly DateOfBirth { get; private set; }
-    public string PhoneNumber { get; private set; } = default!; // BR02: Số điện thoại duy nhất
+    public string ReaderCode { get; private set; } = string.Empty; // BR01: Mã độc giả duy nhất, tự sinh
+    public string FullName { get; private set; } = string.Empty;
+    public DateTime DateOfBirth { get; private set; }
+    public string PhoneNumber { get; private set; } = string.Empty; // BR02: Số điện thoại duy nhất
     public string? Email { get; private set; }
     public string? Address { get; private set; }
-    public DateOnly RegistrationDate { get; private set; }
-    public DateOnly ExpiryDate { get; private set; }
-    public ReaderStatus Status { get; private set; }
+    public DateTime RegistrationDate { get; private set; } = DateTime.UtcNow;
+    public DateTime ExpiryDate { get; private set; } = DateTime.UtcNow.AddYears(1);
+    public ReaderStatus Status { get; private set; } = ReaderStatus.Active;
 
-    // Private constructor cho EF Core và để kiểm soát việc tạo entity qua factory method
+    // Private constructor cho EF Core
     private Reader() { }
 
     /// <summary>
     /// Factory method để tạo một độc giả mới.
-    /// Đảm bảo tính nhất quán của entity khi khởi tạo.
     /// </summary>
     public static Reader Create(
         string readerCode,
         string fullName,
-        DateOnly dateOfBirth,
+        DateTime dateOfBirth,
         string phoneNumber,
-        DateOnly registrationDate,
-        DateOnly expiryDate,
+        DateTime registrationDate,
+        DateTime expiryDate,
         string createdBy,
         string? email = null,
         string? address = null,
@@ -50,9 +50,8 @@ public class Reader : BaseEntity
             ExpiryDate = expiryDate,
             Status = status,
             CreatedBy = createdBy,
-            LastModifiedBy = createdBy // Khi tạo, LastModifiedBy cũng là người tạo
+            UpdatedBy = createdBy
         };
-        // BaseEntity đã tự động thiết lập Id và CreatedAt
         return reader;
     }
 
@@ -61,12 +60,12 @@ public class Reader : BaseEntity
     /// </summary>
     public void Update(
         string? fullName,
-        DateOnly? dateOfBirth,
+        DateTime? dateOfBirth,
         string? phoneNumber,
         string? email,
         string? address,
-        DateOnly? registrationDate,
-        DateOnly? expiryDate,
+        DateTime? registrationDate,
+        DateTime? expiryDate,
         ReaderStatus? status,
         string updatedBy)
     {
@@ -97,8 +96,8 @@ public class Reader : BaseEntity
             Status = status.Value;
         }
 
-        LastModifiedAt = DateTime.UtcNow;
-        LastModifiedBy = updatedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
     }
 
     /// <summary>
@@ -107,7 +106,7 @@ public class Reader : BaseEntity
     public void SoftDelete(string deletedBy)
     {
         IsDeleted = true;
-        LastModifiedAt = DateTime.UtcNow;
-        LastModifiedBy = deletedBy;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = deletedBy;
     }
 }

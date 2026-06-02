@@ -24,7 +24,7 @@ public class ApiResponse<T>
     /// <summary>
     /// Tạo phản hồi thành công.
     /// </summary>
-    public static ApiResponse<T> Success(T data, string? message = null)
+    public static ApiResponse<T> Succeeded(T data, string? message = null)
     {
         return new ApiResponse<T>(true, data, message);
     }
@@ -32,7 +32,7 @@ public class ApiResponse<T>
     /// <summary>
     /// Tạo phản hồi lỗi.
     /// </summary>
-    public static ApiResponse<T> Error(string message, List<ValidationError>? errors = null)
+    public static ApiResponse<T> Failed(string message, List<ValidationError>? errors = null)
     {
         return new ApiResponse<T>(false, default, message, errors);
     }
@@ -54,12 +54,12 @@ public class ApiResponse
         Errors = errors ?? new List<ValidationError>();
     }
 
-    public static ApiResponse Success(string? message = null)
+    public static ApiResponse Succeeded(string? message = null)
     {
         return new ApiResponse(true, message);
     }
 
-    public static ApiResponse Error(string message, List<ValidationError>? errors = null)
+    public static ApiResponse Failed(string message, List<ValidationError>? errors = null)
     {
         return new ApiResponse(false, message, errors);
     }

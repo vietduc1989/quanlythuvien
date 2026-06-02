@@ -21,17 +21,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         // Đăng ký các service chung khác trong Application layer nếu có
-        services.AddScoped<IUnitOfWork, UnitOfWorkPlaceholder>(); // TODO: Implement IUnitOfWork in Infrastructure
         
         return services;
-    }
-
-    // Tạm thời để tránh lỗi build khi chưa implement IUnitOfWork
-    private class UnitOfWorkPlaceholder : IUnitOfWork
-    {
-        public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(0);
-        }
     }
 }

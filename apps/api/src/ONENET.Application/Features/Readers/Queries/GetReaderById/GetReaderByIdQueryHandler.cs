@@ -1,7 +1,7 @@
 // QUAN-20260601-105011
 using MediatR;
 using ONENET.Application.Common.Exceptions;
-using ONENET.Application.Common.Models;
+using ONENET.Domain.Common;
 using ONENET.Application.Features.Readers.DTOs;
 using ONENET.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -37,12 +37,12 @@ public class GetReaderByIdQueryHandler : IRequestHandler<GetReaderByIdQuery, Res
             ReaderId = reader.Id,
             ReaderCode = reader.ReaderCode,
             FullName = reader.FullName,
-            DateOfBirth = reader.DateOfBirth,
+            DateOfBirth = DateOnly.FromDateTime(reader.DateOfBirth),
             PhoneNumber = reader.PhoneNumber,
             Email = reader.Email,
             Address = reader.Address,
-            RegistrationDate = reader.RegistrationDate,
-            ExpiryDate = reader.ExpiryDate,
+            RegistrationDate = DateOnly.FromDateTime(reader.RegistrationDate),
+            ExpiryDate = DateOnly.FromDateTime(reader.ExpiryDate),
             Status = reader.Status
         };
 

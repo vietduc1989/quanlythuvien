@@ -48,11 +48,11 @@ public class ReadersController : ControllerBase
         if (result.IsSuccess)
         {
             _logger.LogInformation("Reader created successfully with ID: {ReaderId}", result.Value!.ReaderId);
-            return CreatedAtAction(nameof(GetById), new { id = result.Value!.ReaderId }, ApiResponse<CreateReaderResponse>.Success(result.Value));
+            return CreatedAtAction(nameof(GetById), new { id = result.Value!.ReaderId }, ApiResponse<CreateReaderResponse>.Succeeded(result.Value));
         }
 
         _logger.LogWarning("Failed to create reader: {ErrorMessage}", result.Error);
-        return BadRequest(ApiResponse.Error(result.Error!));
+        return BadRequest(ApiResponse.Failed(result.Error!));
     }
 
     /// <summary>
@@ -79,11 +79,11 @@ public class ReadersController : ControllerBase
 
         if (result.IsSuccess)
         {
-            return Ok(ApiResponse<PaginatedList<ReaderListItemDto>>.Success(result.Value!));
+            return Ok(ApiResponse<PaginatedList<ReaderListItemDto>>.Succeeded(result.Value!));
         }
 
         _logger.LogWarning("Failed to retrieve reader list: {ErrorMessage}", result.Error);
-        return BadRequest(ApiResponse.Error(result.Error!));
+        return BadRequest(ApiResponse.Failed(result.Error!));
     }
 
     /// <summary>
@@ -108,12 +108,12 @@ public class ReadersController : ControllerBase
 
         if (result.IsSuccess)
         {
-            return Ok(ApiResponse<ReaderDto>.Success(result.Value!));
+            return Ok(ApiResponse<ReaderDto>.Succeeded(result.Value!));
         }
 
         _logger.LogWarning("Failed to retrieve reader with ID {ReaderId}: {ErrorMessage}", id, result.Error);
-        // NotFoundException sẽ được GlobalExceptionMiddleware xử lý thành 404
-        return NotFound(ApiResponse.Error(result.Error!));
+        // NotFoundException will be handled by GlobalExceptionMiddleware to return 404
+        return NotFound(ApiResponse.Failed(result.Error!));
     }
 
     /// <summary>
@@ -143,7 +143,7 @@ public class ReadersController : ControllerBase
         if (id != command.ReaderId)
         {
             _logger.LogWarning("Mismatched Reader ID in path ({PathId}) and body ({BodyId}) for update request.", id, command.ReaderId);
-            return BadRequest(ApiResponse.Error("Reader ID in path must match Reader ID in request body."));
+            return BadRequest(ApiResponse.Failed("Reader ID in path must match Reader ID in request body."));
         }
 
         var result = await _mediator.Send(command);
@@ -151,12 +151,12 @@ public class ReadersController : ControllerBase
         if (result.IsSuccess)
         {
             _logger.LogInformation("Reader with ID: {ReaderId} updated successfully.", result.Value);
-            return Ok(ApiResponse<Guid>.Success(result.Value));
+            return Ok(ApiResponse<Guid>.Succeeded(result.Value));
         }
 
         // Lỗi xung đột sẽ được GlobalExceptionMiddleware bắt và trả về 409 Conflict
         // Các lỗi khác (validation, not found) cũng sẽ được middleware xử lý
         _logger.LogWarning("Failed to update reader with ID {ReaderId}: {ErrorMessage}", id, result.Error);
-        return BadRequest(ApiResponse.Error(result.Error!));
+        return BadRequest(ApiResponse.Failed(result.Error!));
     }
 }

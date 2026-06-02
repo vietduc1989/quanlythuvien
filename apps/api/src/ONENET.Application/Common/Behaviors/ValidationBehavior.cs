@@ -1,15 +1,14 @@
-// QUAN-20260601-105011
 using FluentValidation;
 using MediatR;
-using ONENET.Application.Common.Exceptions;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ONENET.Application.Common.Behaviors;
 
-/// <summary>
-/// MediatR pipeline behavior để thực hiện validation cho các request.
-/// </summary>
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+    where TRequest : notnull
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
@@ -28,13 +27,14 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
                 _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
 
             var failures = validationResults
-                .Where(r => r.Errors.Any())
                 .SelectMany(r => r.Errors)
+                .Where(f => f != null)
                 .ToList();
 
-            if (failures.Any())
+            if (failures.Count != 0)
                 throw new ValidationException(failures);
         }
+
         return await next();
     }
 }

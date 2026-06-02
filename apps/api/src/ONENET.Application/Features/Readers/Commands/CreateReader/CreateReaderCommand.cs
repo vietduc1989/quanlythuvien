@@ -1,6 +1,6 @@
 // QUAN-20260601-105011
 using MediatR;
-using ONENET.Application.Common.Models;
+using ONENET.Domain.Common;
 using ONENET.Domain.Enums;
 
 namespace ONENET.Application.Features.Readers.Commands.CreateReader;

@@ -1,15 +1,16 @@
-// QUAN-20260601-105011
-using System.Net;
-using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using ONENET.Application.Common.Exceptions;
-using ONENET.Application.Common.Models;
-using Serilog;
+using ONENET.WebAPI.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
+using FluentValidation;
 
 namespace ONENET.WebAPI.Middleware;
 
-/// <summary>
-/// Middleware toàn cục để bắt và xử lý các ngoại lệ, trả về phản hồi API chuẩn.
-/// </summary>
 public class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
@@ -21,69 +22,41 @@ public class GlobalExceptionMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext httpContext)
+    public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(httpContext);
+            await _next(context);
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+            var errors = ex.Errors
+                .Select(e => new ApiError(e.PropertyName, e.ErrorMessage))
+                .ToList();
+
+            var response = ApiResponse.FailureResult("Dữ liệu đầu vào không hợp lệ.", errors);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+        catch (NotFoundException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+
+            var response = ApiResponse.FailureResult(ex.Message);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(httpContext, ex);
+            _logger.LogError(ex, "Đã xảy ra lỗi hệ thống không mong muốn.");
+
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+            var response = ApiResponse.FailureResult($"Lỗi hệ thống: {ex.Message}");
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
         }
-    }
-
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        context.Response.ContentType = "application/json";
-        var response = new ApiResponse();
-        var statusCode = HttpStatusCode.InternalServerError;
-
-        switch (exception)
-        {
-            case ValidationException validationException:
-                statusCode = HttpStatusCode.BadRequest;
-                response.Message = "One or more validation errors occurred.";
-                response.Errors = validationException.Errors.SelectMany(kvp => kvp.Value.Select(msg => new ValidationError { Field = kvp.Key, Message = msg })).ToList();
-                _logger.LogWarning(validationException, "Validation error occurred: {Message}", validationException.Message);
-                break;
-            case NotFoundException _:
-                statusCode = HttpStatusCode.NotFound;
-                response.Message = exception.Message;
-                _logger.LogWarning(exception, "Not Found error occurred: {Message}", exception.Message);
-                break;
-            case UnauthorizedAccessException _: // Example for 401, though JWT middleware handles this mostly
-                statusCode = HttpStatusCode.Unauthorized;
-                response.Message = "Unauthorized access.";
-                _logger.LogWarning(exception, "Unauthorized access: {Message}", exception.Message);
-                break;
-            case ForbiddenException _: // Custom exception if needed for 403
-                statusCode = HttpStatusCode.Forbidden;
-                response.Message = "Forbidden. User does not have sufficient permissions.";
-                _logger.LogWarning(exception, "Forbidden access: {Message}", exception.Message);
-                break;
-            case InvalidOperationException invOpEx when invOpEx.Message.Contains("Concurrency conflict"): // Explicitly check for concurrency message
-                statusCode = HttpStatusCode.Conflict;
-                response.Message = invOpEx.Message;
-                _logger.LogWarning(invOpEx, "Concurrency conflict error: {Message}", invOpEx.Message);
-                break;
-            default:
-                statusCode = HttpStatusCode.InternalServerError;
-                response.Message = "An unexpected error occurred. Please try again later.";
-                _logger.LogError(exception, "Unhandled exception occurred: {Message}", exception.Message);
-                break;
-        }
-
-        response.Success = false;
-        context.Response.StatusCode = (int)statusCode;
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
-    }
-
-    // A placeholder for a potential ForbiddenException if not using default AuthZ handlers
-    private class ForbiddenException : Exception
-    {
-        public ForbiddenException() : base() { }
-        public ForbiddenException(string message) : base(message) { }
-        public ForbiddenException(string message, Exception innerException) : base(message, innerException) { }
     }
 }
