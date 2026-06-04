@@ -1,7 +1,7 @@
 // QUAN-20260601-1634
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1'; // Default to backend's default port
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'; // Default to backend's default port
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,
