@@ -11,7 +11,7 @@ interface DashboardStats {
 }
 
 interface DashboardProps {
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: string, autoOpenModal?: boolean) => void;
 }
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
@@ -156,7 +156,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           <Text size="sm" c="dimmed" mb="md" style={{ flexGrow: 1 }}>
             Đăng ký thêm đầu sách mới vào cơ sở dữ liệu thư viện để phục vụ bạn đọc.
           </Text>
-          <Button fullWidth onClick={() => onNavigate('books')} variant="light" color="blue">
+          <Button fullWidth onClick={() => onNavigate('books', true)} variant="light" color="blue">
             Quản lý sách
           </Button>
         </Card>
@@ -169,7 +169,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           <Text size="sm" c="dimmed" mb="md" style={{ flexGrow: 1 }}>
             Lập thẻ độc giả mới, cập nhật hồ sơ thông tin liên lạc và gia hạn thẻ.
           </Text>
-          <Button fullWidth onClick={() => onNavigate('readers')} variant="light" color="teal">
+          <Button fullWidth onClick={() => onNavigate('readers', true)} variant="light" color="teal">
             Quản lý độc giả
           </Button>
         </Card>
@@ -182,7 +182,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           <Text size="sm" c="dimmed" mb="md" style={{ flexGrow: 1 }}>
             Thực hiện cho bạn đọc mượn sách, ghi nhận sách trả và kiểm tra tình trạng quá hạn.
           </Text>
-          <Button fullWidth onClick={() => onNavigate('loans')} variant="light" color="indigo">
+          <Button fullWidth onClick={() => onNavigate('loans', true)} variant="light" color="indigo">
             Quản lý mượn trả
           </Button>
         </Card>

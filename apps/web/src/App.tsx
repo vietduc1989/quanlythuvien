@@ -10,19 +10,25 @@ import LoanManagement from './pages/LoanManagement';
 export default function App() {
   const [opened, { toggle }] = useDisclosure();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [openModalOnPage, setOpenModalOnPage] = useState<boolean>(false);
+
+  const handleNavigate = (tab: string, autoOpenModal: boolean = false) => {
+    setActiveTab(tab);
+    setOpenModalOnPage(autoOpenModal);
+  };
 
   const renderActivePage = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard onNavigate={(tab) => setActiveTab(tab)} />;
+        return <Dashboard onNavigate={handleNavigate} />;
       case 'books':
-        return <BookManagement />;
+        return <BookManagement autoOpenAdd={openModalOnPage} onCloseAutoOpen={() => setOpenModalOnPage(false)} />;
       case 'readers':
-        return <ReaderManagement />;
+        return <ReaderManagement autoOpenAdd={openModalOnPage} onCloseAutoOpen={() => setOpenModalOnPage(false)} />;
       case 'loans':
-        return <LoanManagement />;
+        return <LoanManagement autoOpenAdd={openModalOnPage} onCloseAutoOpen={() => setOpenModalOnPage(false)} />;
       default:
-        return <Dashboard onNavigate={(tab) => setActiveTab(tab)} />;
+        return <Dashboard onNavigate={handleNavigate} />;
     }
   };
 
@@ -80,6 +86,7 @@ export default function App() {
               }
               onClick={() => {
                 setActiveTab(item.value);
+                setOpenModalOnPage(false);
                 if (opened) toggle(); // Close mobile navbar when tab clicked
               }}
               style={{

@@ -40,7 +40,12 @@ interface BookOption {
   status: string;
 }
 
-export default function LoanManagement() {
+interface LoanManagementProps {
+  autoOpenAdd?: boolean;
+  onCloseAutoOpen?: () => void;
+}
+
+export default function LoanManagement({ autoOpenAdd, onCloseAutoOpen }: LoanManagementProps) {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -106,6 +111,13 @@ export default function LoanManagement() {
   useEffect(() => {
     fetchLoans();
   }, [page, isOverdueFilter]);
+
+  useEffect(() => {
+    if (autoOpenAdd) {
+      handleOpenAdd();
+      onCloseAutoOpen?.();
+    }
+  }, [autoOpenAdd]);
 
   const handleOpenAdd = () => {
     setSelectedReader(null);

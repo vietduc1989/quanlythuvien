@@ -21,7 +21,12 @@ interface Reader {
   status: number;
 }
 
-export default function ReaderManagement() {
+interface ReaderManagementProps {
+  autoOpenAdd?: boolean;
+  onCloseAutoOpen?: () => void;
+}
+
+export default function ReaderManagement({ autoOpenAdd, onCloseAutoOpen }: ReaderManagementProps) {
   const [readers, setReaders] = useState<Reader[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -73,6 +78,13 @@ export default function ReaderManagement() {
   useEffect(() => {
     fetchReaders();
   }, [page, search, statusFilter]);
+
+  useEffect(() => {
+    if (autoOpenAdd) {
+      handleOpenAdd();
+      onCloseAutoOpen?.();
+    }
+  }, [autoOpenAdd]);
 
   const handleOpenAdd = () => {
     const todayStr = new Date().toISOString().split('T')[0];

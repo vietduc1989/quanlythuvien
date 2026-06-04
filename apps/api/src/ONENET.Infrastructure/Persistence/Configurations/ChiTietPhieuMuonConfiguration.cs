@@ -28,6 +28,13 @@ public class ChiTietPhieuMuonConfiguration : IEntityTypeConfiguration<ChiTietPhi
             .HasConversion<string>()
             .HasMaxLength(50);
 
+        // Map UpdatedAt and UpdatedBy to database columns LastModifiedAt and LastModifiedBy
+        builder.Property(ct => ct.UpdatedAt)
+            .HasColumnName("LastModifiedAt");
+
+        builder.Property(ct => ct.UpdatedBy)
+            .HasColumnName("LastModifiedBy");
+
         // Soft delete global filter
         builder.HasQueryFilter(ct => !ct.IsDeleted);
     }

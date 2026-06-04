@@ -21,7 +21,12 @@ interface Book {
   status: string;
 }
 
-export default function BookManagement() {
+interface BookManagementProps {
+  autoOpenAdd?: boolean;
+  onCloseAutoOpen?: () => void;
+}
+
+export default function BookManagement({ autoOpenAdd, onCloseAutoOpen }: BookManagementProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -71,6 +76,13 @@ export default function BookManagement() {
   useEffect(() => {
     fetchBooks();
   }, [page, search]);
+
+  useEffect(() => {
+    if (autoOpenAdd) {
+      handleOpenAdd();
+      onCloseAutoOpen?.();
+    }
+  }, [autoOpenAdd]);
 
   const handleOpenAdd = () => {
     setEditingBook(null);
