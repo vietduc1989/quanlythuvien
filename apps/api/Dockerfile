@@ -3,13 +3,12 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
 # Copy projects and restore dependencies to cache layer
-COPY ["apps/api/ONENET.slnx", "apps/api/"]
 COPY ["apps/api/src/ONENET.Domain/ONENET.Domain.csproj", "apps/api/src/ONENET.Domain/"]
 COPY ["apps/api/src/ONENET.Application/ONENET.Application.csproj", "apps/api/src/ONENET.Application/"]
 COPY ["apps/api/src/ONENET.Infrastructure/ONENET.Infrastructure.csproj", "apps/api/src/ONENET.Infrastructure/"]
 COPY ["apps/api/src/ONENET.WebAPI/ONENET.WebAPI.csproj", "apps/api/src/ONENET.WebAPI/"]
 
-RUN dotnet restore "apps/api/ONENET.slnx"
+RUN dotnet restore "apps/api/src/ONENET.WebAPI/ONENET.WebAPI.csproj"
 
 # Copy the rest of the source code
 COPY apps/api/src/ apps/api/src/

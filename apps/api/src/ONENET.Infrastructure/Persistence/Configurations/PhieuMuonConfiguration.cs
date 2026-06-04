@@ -30,6 +30,13 @@ public class PhieuMuonConfiguration : IEntityTypeConfiguration<PhieuMuon>
             .HasForeignKey(ct => ct.PhieuMuonId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Map UpdatedAt and UpdatedBy to database columns LastModifiedAt and LastModifiedBy
+        builder.Property(pm => pm.UpdatedAt)
+            .HasColumnName("LastModifiedAt");
+
+        builder.Property(pm => pm.UpdatedBy)
+            .HasColumnName("LastModifiedBy");
+
         // Soft delete global filter
         builder.HasQueryFilter(pm => !pm.IsDeleted);
     }

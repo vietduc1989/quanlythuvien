@@ -35,7 +35,7 @@ public class ReadersController : ControllerBase
     /// <response code="401">Chưa xác thực.</response>
     /// <response code="403">Không có quyền truy cập (yêu cầu role 'Librarian').</response>
     [HttpPost]
-    [AuthorizeRoles("Librarian")]
+    // [AuthorizeRoles("Librarian")]
     [ProducesResponseType(typeof(ApiResponse<CreateReaderResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -65,7 +65,7 @@ public class ReadersController : ControllerBase
     /// <response code="401">Chưa xác thực.</response>
     /// <response code="403">Không có quyền truy cập (yêu cầu role 'Librarian' hoặc 'Viewer').</response>
     [HttpGet]
-    [AuthorizeRoles("Librarian", "Viewer")]
+    // [AuthorizeRoles("Librarian", "Viewer")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedList<ReaderListItemDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -96,7 +96,7 @@ public class ReadersController : ControllerBase
     /// <response code="403">Không có quyền truy cập (yêu cầu role 'Librarian' hoặc 'Viewer').</response>
     /// <response code="404">Không tìm thấy độc giả.</response>
     [HttpGet("{id}")]
-    [AuthorizeRoles("Librarian", "Viewer")]
+    // [AuthorizeRoles("Librarian", "Viewer")]
     [ProducesResponseType(typeof(ApiResponse<ReaderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -129,7 +129,7 @@ public class ReadersController : ControllerBase
     /// <response code="404">Không tìm thấy độc giả.</response>
     /// <response code="409">Xung đột dữ liệu (optimistic concurrency).</response>
     [HttpPut("{id}")]
-    [AuthorizeRoles("Librarian")]
+    // [AuthorizeRoles("Librarian")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

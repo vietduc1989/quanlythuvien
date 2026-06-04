@@ -62,10 +62,10 @@ public class CreateReaderCommandHandler : IRequestHandler<CreateReaderCommand, R
         var reader = Reader.Create(
             readerCode: readerCode,
             fullName: request.FullName,
-            dateOfBirth: request.DateOfBirth.ToDateTime(TimeOnly.MinValue),
+            dateOfBirth: DateTime.SpecifyKind(request.DateOfBirth.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc),
             phoneNumber: request.PhoneNumber,
-            registrationDate: request.RegistrationDate.ToDateTime(TimeOnly.MinValue),
-            expiryDate: request.ExpiryDate.ToDateTime(TimeOnly.MinValue),
+            registrationDate: DateTime.SpecifyKind(request.RegistrationDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc),
+            expiryDate: DateTime.SpecifyKind(request.ExpiryDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc),
             email: request.Email,
             address: request.Address,
             status: request.Status,

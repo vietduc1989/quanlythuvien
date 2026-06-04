@@ -3,4 +3,5 @@
   <Project Path="src/ONENET.Application/ONENET.Application.csproj" />
   <Project Path="src/ONENET.Infrastructure/ONENET.Infrastructure.csproj" />
   <Project Path="src/ONENET.WebAPI/ONENET.WebAPI.csproj" />
+  <Project Path="../../tests/ONENET.UnitTests/ONENET.UnitTests.csproj" />
 </Solution>
