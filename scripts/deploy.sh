@@ -1,59 +1,85 @@
-```bash
 #!/bin/bash
-# scripts/deploy.sh - Script triển khai cho môi trường production/staging
-# Kịch bản này giả định bạn đã có một máy chủ với Docker và Docker Compose đã được cài đặt.
-# Và các biến môi trường cần thiết (ví dụ: DOCKER_USERNAME, DOCKER_PASSWORD, các biến trong .env)
-# đã được thiết lập trên máy chủ hoặc được truyền vào script.
+# scripts/deploy.sh - Script triển khai tích hợp cho dự án Quản lý Thư viện (ONENET)
 
-set -euo pipefail # Thoát ngay lập tức nếu có lệnh fail, hoặc biến chưa được định nghĩa
+set -euo pipefail # Thoát ngay lập tức nếu có lệnh lỗi hoặc biến chưa được định nghĩa
 
-# --- Cấu hình ---
-PROJECT_NAME="onenet-report" # Tên dự án Docker Compose
-DOCKER_USERNAME="${DOCKER_USERNAME:-}" # Biến môi trường cho Docker username
-DOCKER_PASSWORD="${DOCKER_PASSWORD:-}" # Biến môi trường cho Docker password
-# Đường dẫn đến file docker-compose.yml và .env trên máy chủ triển khai
+PROJECT_NAME="onenet-library"
 COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
 
-# Tên và tag của các Docker Image đã được build và push từ CI/CD
-API_IMAGE="onenet/report-api:latest"
-WEB_IMAGE="onenet/report-web:latest"
+# Đường dẫn các image trên GHCR (sử dụng biến môi trường hoặc mặc định)
+API_IMAGE="${API_IMAGE:-ghcr.io/vietduc1989/quanlythuvien/api:latest}"
+WEB_IMAGE="${WEB_IMAGE:-ghcr.io/vietduc1989/quanlythuvien/web:latest}"
 
-echo "--- Bắt đầu triển khai cho dự án ${PROJECT_NAME} ---"
+echo "=== Bắt đầu triển khai dự án ${PROJECT_NAME} ==="
 
-# --- 1. Đăng nhập Docker Registry ---
-if [ -n "$DOCKER_USERNAME" ] && [ -n "$DOCKER_PASSWORD" ]; then
-    echo "Đang đăng nhập vào Docker Registry..."
-    echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-    echo "Đăng nhập Docker thành công."
-else
-    echo "Cảnh báo: Không tìm thấy DOCKER_USERNAME hoặc DOCKER_PASSWORD. Bỏ qua bước đăng nhập Docker."
-    echo "Đảm bảo rằng các image đã được pull trước hoặc có sẵn trên host."
+# 1. Kiểm tra sự tồn tại của file .env
+if [ ! -f "${ENV_FILE}" ]; then
+  echo "Lỗi: Không tìm thấy file ${ENV_FILE}. Vui lòng sao chép và cấu hình từ .env.example."
+  exit 1
 fi
 
-# --- 2. Kiểm tra và Pull các Docker Image mới nhất ---
-echo "Đang pull các Docker images mới nhất..."
-docker pull "${API_IMAGE}"
-docker pull "${WEB_IMAGE}"
-echo "Các images đã được pull thành công."
+# 2. Đăng nhập Docker Registry (nếu có thông tin đăng nhập)
+# Mặc định sử dụng GITHUB_TOKEN để đăng nhập GHCR trong CI
+if [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
+    echo "Đang đăng nhập vào Docker Registry..."
+    echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+    echo "Đăng nhập Registry thành công."
+elif [ -n "${GITHUB_TOKEN:-}" ]; then
+    echo "Đang đăng nhập vào GitHub Container Registry (GHCR)..."
+    echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${github_actor:-github}" --password-stdin
+    echo "Đăng nhập GHCR thành công."
+else
+    echo "Không tìm thấy thông tin đăng nhập registry. Sử dụng images có sẵn hoặc build tại chỗ."
+fi
 
-# --- 3. Dừng và xóa các dịch vụ cũ (nếu có) ---
-echo "Đang dừng và xóa các dịch vụ cũ..."
-# Sử dụng '|| true' để script không bị lỗi nếu không có dịch vụ nào đang chạy
-docker-compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" down || true
-echo "Các dịch vụ cũ đã được dừng."
+# 3. Pull các Docker image mới nhất (nếu có sẵn trên Registry)
+echo "Đang kiểm tra và tải các Docker image mới nhất..."
+docker pull "${API_IMAGE}" || echo "Không thể tải image ${API_IMAGE}, sẽ tự build tại chỗ nếu cần."
+docker pull "${WEB_IMAGE}" || echo "Không thể tải image ${WEB_IMAGE}, sẽ tự build tại chỗ nếu cần."
 
-# --- 4. Khởi động các dịch vụ mới ---
-echo "Đang khởi động các dịch vụ mới bằng docker-compose..."
-docker-compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --remove-orphans
-# -d: chạy ở chế độ detached (nền)
-# --remove-orphans: xóa các container không còn được định nghĩa trong compose file
-echo "Triển khai hoàn tất."
+# 4. Dừng các container cũ
+echo "Đang dừng các container cũ (nếu có)..."
+docker-compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" down --remove-orphans || true
 
-# --- Tùy chọn: Dọn dẹp các Docker images cũ không còn được sử dụng ---
-echo "Đang dọn dẹp các Docker images không còn được sử dụng..."
+# 5. Khởi động các service mới
+echo "Đang khởi động các service bằng docker-compose..."
+# Sử dụng biến môi trường để truyền tên image cho docker-compose
+export API_IMAGE
+export WEB_IMAGE
+docker-compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --build --remove-orphans
+
+# 6. Đợi các service khởi động và kiểm tra healthcheck
+echo "Đang kiểm tra trạng thái hoạt động của các service..."
+TIMEOUT=120 # 2 phút
+ELAPSED=0
+HEALTHY_SERVICES=0
+REQUIRED_SERVICES=3 # db, api, web
+
+while [ "$HEALTHY_SERVICES" -lt "$REQUIRED_SERVICES" ] && [ "$ELAPSED" -lt "$TIMEOUT" ]; do
+    # Đếm số container đạt trạng thái healthy
+    HEALTHY_SERVICES=$(docker-compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" ps | grep "healthy" | wc -l)
+    echo "Trạng thái service: $HEALTHY_SERVICES/$REQUIRED_SERVICES healthy. Đang chờ... ($ELAPSED/${TIMEOUT}s)"
+    
+    if [ "$HEALTHY_SERVICES" -lt "$REQUIRED_SERVICES" ]; then
+        sleep 5
+        ELAPSED=$((ELAPSED + 5))
+    fi
+done
+
+if [ "$HEALTHY_SERVICES" -eq "$REQUIRED_SERVICES" ]; then
+    echo "Tất cả các service đã khởi động thành công và healthy!"
+    echo "Web Frontend có thể truy cập tại http://localhost:80"
+    echo "API Backend có thể truy cập tại http://localhost:8080"
+else
+    echo "Triển khai thất bại: Có service không ở trạng thái healthy sau $TIMEOUT giây."
+    docker-compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" ps
+    docker-compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" logs --tail 50
+    exit 1
+fi
+
+# 7. Dọn dẹp Docker images rác (dangling images)
+echo "Đang dọn dẹp các Docker images dư thừa..."
 docker image prune -f
-echo "Dọn dẹp hoàn tất."
 
-echo "--- Quá trình triển khai dự án ${PROJECT_NAME} đã hoàn thành ---"
-```
+echo "=== Quá trình triển khai dự án ${PROJECT_NAME} hoàn tất ==="

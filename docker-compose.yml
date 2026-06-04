@@ -1,84 +1,74 @@
-```yaml
 version: '3.8'
 
-# File .env sẽ chứa các biến môi trường như POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
-# Ví dụ file .env:
-# POSTGRES_DB=onenet_report_db
-# POSTGRES_USER=devuser
-# POSTGRES_PASSWORD=devpassword
-# ASPNETCORE_ENVIRONMENT=Development
-# VITE_API_BASE_URL=http://localhost:8080 # Hoặc /api nếu dùng proxy qua Nginx
-
 services:
+  # --- PostgreSQL Database Service ---
   db:
-    image: postgres:15-alpine # Sử dụng PostgreSQL phiên bản 15 alpine
+    image: postgres:15-alpine
+    container_name: book-lending-db
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - db-data:/var/lib/postgresql/data # Lưu trữ dữ liệu vào volume để dữ liệu không bị mất khi container restart/xóa
-    # BẮT BUỘC: Healthcheck cho database
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s # Kiểm tra mỗi 5 giây
-      timeout: 5s  # Timeout nếu kiểm tra quá 5 giây
-      retries: 5   # Thử lại 5 lần trước khi báo unhealthy
-      start_period: 10s # Thời gian khởi động ban đầu cho DB
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - onenet-network
 
+  # --- .NET 10 API Service ---
   api:
-    # Với docker-compose, có thể dùng 'build' cho phát triển hoặc 'image' cho triển khai production.
-    # Khi cả 'image' và 'build' được định nghĩa, `docker-compose up` sẽ build (hoặc sử dụng image đã build)
-    # và gắn tag là giá trị của 'image'.
-    image: onenet/report-api:latest # Tên image khi build hoặc pull
+    image: ${API_IMAGE:-ghcr.io/vietduc1989/quanlythuvien/api:latest}
     build:
-      context: . # Context là thư mục gốc của repo
+      context: .
       dockerfile: apps/api/Dockerfile
+    container_name: book-lending-api
     restart: always
-    ports:
-      - "8080:8080" # Map cổng 8080 của host tới cổng 8080 của container API
     environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      # Chuỗi kết nối đến database, sử dụng tên dịch vụ 'db' làm host
+      ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+    ports:
+      - "8080:8080"
     depends_on:
       db:
-        condition: service_healthy # Đảm bảo DB healthy trước khi khởi động API
-    # BẮT BUỘC: Healthcheck cho API
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"] # Giả định API có endpoint /health
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/v1/healthcheck || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 20s # Cho API thêm thời gian khởi động và kết nối DB
+      start_period: 20s
     networks:
       - onenet-network
 
+  # --- React Vite Web Frontend Service ---
   web:
-    image: onenet/report-web:latest # Tên image khi build hoặc pull
+    image: ${WEB_IMAGE:-ghcr.io/vietduc1989/quanlythuvien/web:latest}
     build:
-      context: . # Context là thư mục gốc của repo
+      context: .
       dockerfile: apps/web/Dockerfile
+    container_name: book-lending-web
     restart: always
     ports:
-      - "80:80" # Map cổng 80 của host tới cổng 80 của container Web (Nginx)
-    # Nếu frontend cần biến môi trường runtime, Nginx cần cấu hình template.
-    # Hoặc nếu API được proxy qua Nginx, frontend chỉ gọi /api/...
-    # environment:
-    #   VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+      - "80:80"
     depends_on:
       api:
-        condition: service_started # Web có thể khởi động ngay khi API bắt đầu (Nginx chỉ proxy)
+        condition: service_healthy
     networks:
       - onenet-network
 
 networks:
   onenet-network:
-    driver: bridge # Tạo một mạng bridge nội bộ cho các dịch vụ
+    driver: bridge
 
 volumes:
-  db-data: # Định nghĩa named volume cho PostgreSQL
-```
+  db-data:
+    driver: local
