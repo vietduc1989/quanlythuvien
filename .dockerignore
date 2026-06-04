@@ -1,0 +1,25 @@
+# Exclude git and workflows
+.git
+.gitignore
+.github
+_github
+
+# Exclude IDE folders
+.vs
+.vscode
+*.user
+*.suo
+*.sln.docstates
+
+# Exclude .NET build outputs
+**/bin/
+**/obj/
+
+# Exclude Node.js packages and build outputs
+**/node_modules/
+**/dist/
+
+# Exclude local configuration and logs
+.env
+*.log
+logs/
