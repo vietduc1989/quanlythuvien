@@ -79,12 +79,12 @@ public class UpdateReaderCommandHandler : IRequestHandler<UpdateReaderCommand, R
 
         reader.Update(
             fullName: request.FullName,
-            dateOfBirth: request.DateOfBirth?.ToDateTime(TimeOnly.MinValue),
+            dateOfBirth: request.DateOfBirth.HasValue ? DateTime.SpecifyKind(request.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc) : null,
             phoneNumber: request.PhoneNumber,
             email: request.Email,
             address: request.Address,
-            registrationDate: request.RegistrationDate?.ToDateTime(TimeOnly.MinValue),
-            expiryDate: request.ExpiryDate?.ToDateTime(TimeOnly.MinValue),
+            registrationDate: request.RegistrationDate.HasValue ? DateTime.SpecifyKind(request.RegistrationDate.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc) : null,
+            expiryDate: request.ExpiryDate.HasValue ? DateTime.SpecifyKind(request.ExpiryDate.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc) : null,
             status: request.Status,
             updatedBy: _currentUser.UserId ?? "System"
         );
